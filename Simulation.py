@@ -176,7 +176,7 @@ class Simulation:
 
                 # Change movement depending on sickness, 'zombie virus'
                 if agent.get_health() == 'i':
-                    if agent.is_symptematic(self.time_step):
+                    if agent.is_symptomatic(self.time_step):
                         d = par.d_dying
                     else:
                         d = par.d_zombie
