@@ -29,9 +29,9 @@ class Simulation:
         while not done:
             self.time_step = self.time_step + 1
             self.move_population()
+            self.air_transportation()
             self.disease_development()
-            #print(self.population)
-            #print(self.get_population_size())
+
             if self.count['i'] == 0:
                 done = True
                 print('Time: {}'.format(self.time_step))
@@ -162,14 +162,7 @@ class Simulation:
         population_copy = self.population.copy()
         for position in population_copy.keys():
             local_population = self.population.get(position)
-
-            agents = []
-            if local_population['s']:
-                agents.extend(local_population['s'])
-            if local_population['i']:
-                agents.extend(local_population['i'])
-            if local_population['r']:
-                agents.extend(local_population['r'])
+            agents = self.get_agents_from_location(local_population)
 
             for agent in agents:
                 d = par.d
@@ -209,4 +202,38 @@ class Simulation:
                     elif q < par.gamma:
                         self.recover_agent(agent)
 
+    def get_agents_from_location(self, local_population):
+        agents = []
+        if local_population['s']:
+            agents.extend(local_population['s'])
+        if local_population['i']:
+            agents.extend(local_population['i'])
+        if local_population['r']:
+            agents.extend(local_population['r'])
+        return agents
+
+    def air_transportation(self):
+        all_travelling_agents = []
+        for iAirport in range(par.n_airport):
+            position = tuple(par.airport_location[iAirport])
+            airport_population = self.population.get(position)
+
+            if airport_population is None:
+                airport_population = {'s': [], 'i': [], 'r': [], 'count': 0}
+
+            agents = self.get_agents_from_location(airport_population)
+            all_travelling_agents.extend(agents)
+
+            roulette = par.airport_flow[iAirport]
+            for agent in agents:
+                r = random.random()
+                for i in range(par.n_airport):
+                    if r < roulette[i]:
+                        self.remove_agent(agent)
+                        agent.x = par.airport_location[i][0]
+                        agent.y = par.airport_location[i][1]
+                        break
+
+        for agent in all_travelling_agents:
+            self.add_agent(agent)
 
