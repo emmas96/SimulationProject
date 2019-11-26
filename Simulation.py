@@ -1,5 +1,6 @@
 import Parameters as par
 from Agent import Agent
+#from PlotFunctions import PlotFunctions
 
 import random
 import time
@@ -11,12 +12,9 @@ class Simulation:
 
     def __init__(self):
         self.population = {}
-
         self.day = True
         self.time_step = 0
-
         self.population_size = 0
-
         self.count = {'s': 0, 'i': 0, 'r': 0}
 
     def run_simulation(self):
@@ -28,6 +26,8 @@ class Simulation:
         done = False
         while not done:
             self.time_step = self.time_step + 1
+            self.update_day()
+
             self.move_population()
             self.air_transportation()
             self.disease_development()
@@ -48,10 +48,12 @@ class Simulation:
                 print(self.get_population_size())
                 toc = time.time()
                 print('Computing time: ' + str(toc - tic))
-            elif self.count['i'] == self.population_size:
+            elif self.count['i'] >= self.population_size:
                 print('Bad sign: Entire population is infected')
-            elif np.mod(self.time_step, 1000) == 0:
+            if np.mod(self.time_step, 1000) == 0:
                 print('Time: {}'.format(self.time_step))
+
+        #PlotFunctions.plot_population(self.population)
 
     # Initialize population with N susceptible agents
     def initialize_population(self):
@@ -159,26 +161,27 @@ class Simulation:
 
     # Move all agents according to probability gamma
     def move_population(self):
-        population_copy = self.population.copy()
-        for position in population_copy.keys():
-            local_population = self.population.get(position)
-            agents = self.get_agents_from_location(local_population)
+        if self.day:
+            population_copy = self.population.copy()
+            for position in population_copy.keys():
+                local_population = self.population.get(position)
+                agents = self.get_agents_from_location(local_population)
 
-            for agent in agents:
-                d = par.d
+                for agent in agents:
+                    d = par.d
 
-                # Change movement depending on sickness, 'zombie virus'
-                if agent.get_health() == 'i':
-                    if agent.is_symptomatic(self.time_step):
-                        d = par.d_dying
-                    else:
-                        d = par.d_zombie
+                    # Change movement depending on sickness, 'zombie virus'
+                    if agent.get_health() == 'i':
+                        if agent.is_symptomatic(self.time_step):
+                            d = par.d_dying
+                        else:
+                            d = par.d_zombie
 
-                r = random.random()
-                if r < d:
-                    self.remove_agent(agent)
-                    agent.move()
-                    self.add_agent(agent)
+                    r = random.random()
+                    if r < d:
+                        self.remove_agent(agent)
+                        agent.move()
+                        self.add_agent(agent)
 
     def disease_development(self):
         population_copy = self.population.copy()
@@ -236,4 +239,9 @@ class Simulation:
 
         for agent in all_travelling_agents:
             self.add_agent(agent)
+
+    def update_day(self):
+        total_time = par.day_time + par.night_time
+        check_time = self.time_step % total_time
+        self.day = check_time < par.day_time
 
