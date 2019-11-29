@@ -1,6 +1,6 @@
 import Parameters as par
 from Agent import Agent
-#from PlotFunctions import PlotFunctions
+from PlotFunctions import PlotFunctions
 
 import random
 import time
@@ -53,7 +53,18 @@ class Simulation:
             if np.mod(self.time_step, 1000) == 0:
                 print('Time: {}'.format(self.time_step))
 
-        #PlotFunctions.plot_population(self.population)
+        PlotFunctions.plot_population(self.population)
+
+    def get_next_simulation_step(self):
+        self.time_step = self.time_step + 1
+        self.update_day()
+
+        self.move_population()
+        self.air_transportation()
+        self.disease_development()
+
+        PlotFunctions.plot_population(self.population)
+        return self.population
 
     # Initialize population with N susceptible agents
     def initialize_population(self):
