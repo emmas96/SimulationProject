@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 class PlotFunctions:
 
     @staticmethod
-    def plot_population(population):
+    def plot_population(population, path):
         df = pd.DataFrame.from_dict(population, orient='index')
         df = df[df['count'] > 0]
         df['x'] = [int(data[0]) for data in df.index]
@@ -16,7 +16,8 @@ class PlotFunctions:
         plt.scatter(df_s['x'], df_s['y'], c='C0', label='Susceptible')
         plt.scatter(df_i['x'], df_i['y'], c='C1', label='Infected')
         plt.scatter(df_r['x'], df_r['y'], c='C2', label='Recovered')
-        plt.show()
+        plt.savefig(path)
+        plt.close()
 
 
 

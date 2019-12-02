@@ -21,3 +21,9 @@ n_airport = 0
 airport_location = [[2, 2], [99, 99], [99, 1]]
 airport_flow = [[0, 0.5, 1], [0.5, 0.5, 1], [0.5, 1, 1]]
 
+limited_time = True
+T = 2000
+
+save_path = 'base_model_test2'
+plot_step = 1          # How often to plot
+

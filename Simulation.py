@@ -6,6 +6,7 @@ import random
 import time
 import numpy as np
 import sys
+import os
 
 
 class Simulation:
@@ -23,37 +24,39 @@ class Simulation:
         self.start_plague()
         print('Number of individuals initially infected: {}'.format(self.count['i']))
 
-        done = False
-        while not done:
-            self.time_step = self.time_step + 1
-            self.update_day()
+        while True:
+            if self.time_step % par.plot_step == 0:
+                path = os.path.join(par.save_path, 't{}'.format(self.time_step))
+                PlotFunctions.plot_population(self.population, path)
 
-            self.move_population()
-            self.air_transportation()
-            self.disease_development()
+            if par.limited_time and self.time_step >= par.T:
+                print('Simulation ended because of time out.')
+                print('{} susceptible, {} infected, {} recovered and {} people survived in total.'.format(
+                    self.count['s'], self.count['i'], self.count['r'], self.population_size))
+                break
+
+            self.get_next_simulation_step()
 
             if self.count['i'] == 0:
-                done = True
                 print('Time: {}'.format(self.time_step))
                 print('Success: Virus defeated, {} people survived'.format(self.population_size))
                 print(self.population)
                 print(self.get_population_size())
                 toc = time.time()
                 print('Computing time: ' + str(toc - tic))
+                break
             elif self.population_size == 0:
-                done = True
                 print('Time: {}'.format(self.time_step))
                 print('Fail: Entire population has died')
                 print(self.population)
                 print(self.get_population_size())
                 toc = time.time()
                 print('Computing time: ' + str(toc - tic))
+                break
             elif self.count['i'] >= self.population_size:
                 print('Bad sign: Entire population is infected')
             if np.mod(self.time_step, 1000) == 0:
                 print('Time: {}'.format(self.time_step))
-
-        PlotFunctions.plot_population(self.population)
 
     def get_next_simulation_step(self):
         self.time_step = self.time_step + 1
@@ -63,7 +66,6 @@ class Simulation:
         self.air_transportation()
         self.disease_development()
 
-        PlotFunctions.plot_population(self.population)
         return self.population
 
     # Initialize population with N susceptible agents
@@ -76,7 +78,6 @@ class Simulation:
             self.add_agent(agent)
 
         self.population_size = par.N
-
 
     # Insert agent into population
     def add_agent(self, agent):
@@ -149,14 +150,10 @@ class Simulation:
         agent.recover()
 
         self.count['i'] = self.count['i'] - 1
+        self.count['r'] = self.count['r'] + 1
 
     def kill_agent(self, agent):
-        position = agent.get_position()
-        health = agent.get_health()
-
-        local_population = self.population.get(position)
-        local_population[health].pop(local_population[health].index(agent))
-
+        self.remove_agent(agent)
         self.population_size = self.population_size - 1
 
     def get_most_dense_area(self):
