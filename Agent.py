@@ -13,7 +13,7 @@ class Agent:
         self.time_to_symptomatic = None
 
     # Random move
-    def move(self):
+    def move_old(self):
         done = False
 
         while not done:

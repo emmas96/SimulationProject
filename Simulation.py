@@ -17,17 +17,18 @@ class Simulation:
         self.time_step = 0
         self.population_size = 0
         self.count = {'s': 0, 'e': 0, 'i': 0, 'r': 0}
+        self.dead = []
 
     def run_simulation(self):
         tic = time.time()
         self.initialize_population()
         self.start_plague()
-        print('Number of individuals initially infected: {}'.format(self.count['i']))
+        print('Number of individuals initially exposed: {}'.format(self.count['e']))
 
         while True:
             if self.time_step % par.plot_step == 0:
                 path = os.path.join(par.save_path, 't{}'.format(self.time_step))
-                PlotFunctions.plot_population(self.population, path, self.time_step, self.day)
+                PlotFunctions.plot_population(self.population, np.array(self.dead), path, self.time_step, self.day)
 
             if par.limited_time and self.time_step >= par.T:
                 print('Simulation ended because of time out.')
@@ -166,6 +167,7 @@ class Simulation:
     def kill_agent(self, agent):
         self.remove_agent(agent)
         self.population_size = self.population_size - 1
+        self.dead.append([agent.x, agent.y])
 
     def get_most_dense_area(self):
         most_dense_position = None
@@ -184,7 +186,7 @@ class Simulation:
             population_copy = self.population.copy()
             for position in population_copy.keys():
                 local_population = self.population.get(position)
-                agents = self.get_agents_from_location(local_population)
+                agents = Simulation.get_agents_from_location(local_population)
 
                 for agent in agents:
                     d = par.d
@@ -209,8 +211,8 @@ class Simulation:
         for position in population_copy.keys():
             local_population = self.population.get(position)
 
-            if local_population['i']:
-                number_of_infected = len(local_population['i'])
+            if local_population['e'] or local_population['i']:
+                number_of_infected = len(local_population['e']) + len(local_population['i'])
                 propability_of_infection = (1 - par.beta) ** number_of_infected
 
                 r = random.random()
@@ -225,11 +227,15 @@ class Simulation:
                         self.kill_agent(agent)
                     elif q < par.gamma:
                         self.recover_agent(agent)
+                # TODO should exposed be able to recover?
 
-    def get_agents_from_location(self, local_population):
+    @staticmethod
+    def get_agents_from_location(local_population):
         agents = []
         if local_population['s']:
             agents.extend(local_population['s'])
+        if local_population['e']:
+            agents.extend(local_population['e'])
         if local_population['i']:
             agents.extend(local_population['i'])
         if local_population['r']:
@@ -243,9 +249,9 @@ class Simulation:
             airport_population = self.population.get(position)
 
             if airport_population is None:
-                airport_population = {'s': [], 'i': [], 'r': [], 'count': 0}
+                airport_population = {'s': [], 'e': [], 'i': [], 'r': [], 'count': 0}
 
-            agents = self.get_agents_from_location(airport_population)
+            agents = Simulation.get_agents_from_location(airport_population)
             all_travelling_agents.extend(agents)
 
             roulette = par.airport_flow[iAirport]

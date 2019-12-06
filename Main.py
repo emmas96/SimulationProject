@@ -11,6 +11,7 @@ def get_dir():
         print("Directory already exits, choose a new one.")
         sys.exit()
 
+
 get_dir()
 sim = Simulation()
 sim.run_simulation()
