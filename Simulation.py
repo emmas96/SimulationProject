@@ -16,7 +16,7 @@ class Simulation:
         self.day = True
         self.time_step = 0
         self.population_size = 0
-        self.count = {'s': 0, 'i': 0, 'r': 0}
+        self.count = {'s': 0, 'e': 0, 'i': 0, 'r': 0}
 
     def run_simulation(self):
         tic = time.time()
@@ -27,17 +27,17 @@ class Simulation:
         while True:
             if self.time_step % par.plot_step == 0:
                 path = os.path.join(par.save_path, 't{}'.format(self.time_step))
-                PlotFunctions.plot_population(self.population, path)
+                PlotFunctions.plot_population(self.population, path, self.time_step, self.day)
 
             if par.limited_time and self.time_step >= par.T:
                 print('Simulation ended because of time out.')
-                print('{} susceptible, {} infected, {} recovered and {} people survived in total.'.format(
-                    self.count['s'], self.count['i'], self.count['r'], self.population_size))
+                print('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.'.format(
+                    self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
                 break
 
             self.get_next_simulation_step()
 
-            if self.count['i'] == 0:
+            if self.count['e'] + self.count['i'] == 0:
                 print('Time: {}'.format(self.time_step))
                 print('Success: Virus defeated, {} people survived'.format(self.population_size))
                 print(self.population)
@@ -53,7 +53,7 @@ class Simulation:
                 toc = time.time()
                 print('Computing time: ' + str(toc - tic))
                 break
-            elif self.count['i'] >= self.population_size:
+            elif self.count['e'] + self.count['i'] >= self.population_size:
                 print('Bad sign: Entire population is infected')
             if np.mod(self.time_step, 1000) == 0:
                 print('Time: {}'.format(self.time_step))
@@ -86,7 +86,7 @@ class Simulation:
         local_population = self.population.get(position, 0)
 
         if local_population == 0:
-            new_local_population = {'s': [], 'i': [], 'r': [], 'count': 0}
+            new_local_population = {'s': [], 'e': [], 'i': [], 'r': [], 'count': 0}
             new_local_population[health].append(agent)
         else:
             local_population[health].append(agent)
@@ -127,16 +127,16 @@ class Simulation:
     def infect_location(self, position):
         local_population = self.population.get(position)
 
-        self.count['i'] = self.count['i'] + len(local_population['s'])
+        self.count['e'] = self.count['e'] + len(local_population['s'])
         self.count['s'] = self.count['s'] - len(local_population['s'])
 
         for agent in local_population['s']:
             agent.infect(self.time_step)
 
-        if local_population['i']:
-            local_population['i'].extend(local_population['s'])
+        if local_population['e']:
+            local_population['e'].extend(local_population['s'])
         else:
-            local_population['i'] = local_population['s']
+            local_population['e'] = local_population['s']
         local_population['s'] = []
 
         self.population.update({position: local_population})
@@ -144,13 +144,24 @@ class Simulation:
     # Recover a single agent
     def recover_agent(self, agent):
         position = agent.get_position()
+        health = agent.get_health()
         local_population = self.population.get(position)
-        local_population['i'].pop(local_population['i'].index(agent))
+        local_population[health].pop(local_population[health].index(agent))
         local_population['r'].append(agent)
         agent.recover()
 
-        self.count['i'] = self.count['i'] - 1
+        self.count[health] = self.count[health] - 1
         self.count['r'] = self.count['r'] + 1
+
+    # Recover a single agent
+    def make_agent_symptomatic(self, agent):
+        position = agent.get_position()
+        local_population = self.population.get(position)
+        local_population['e'].pop(local_population['e'].index(agent))
+        local_population['i'].append(agent)
+
+        self.count['e'] = self.count['e'] - 1
+        self.count['i'] = self.count['i'] + 1
 
     def kill_agent(self, agent):
         self.remove_agent(agent)
@@ -178,12 +189,14 @@ class Simulation:
                 for agent in agents:
                     d = par.d
 
-                    # Change movement depending on sickness, 'zombie virus'
-                    if agent.get_health() == 'i':
-                        if agent.is_symptomatic(self.time_step):
-                            d = par.d_dying
-                        else:
-                            d = par.d_zombie
+                    health = agent.get_health()
+                    if health == 'e':
+                        d = par.d_exposed
+                        if agent.becomes_symptomatic(self.time_step):
+                            self.make_agent_symptomatic(agent)
+                            d = par.d_symptomatic
+                    elif health == 'i':
+                        d = par.d_symptomatic
 
                     r = random.random()
                     if r < d:
