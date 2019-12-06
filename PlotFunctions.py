@@ -14,7 +14,8 @@ class PlotFunctions:
         # Change background color depending on day and night
         if not day:
             #ax.figure.set_facecolor('black')
-            ax.set_facecolor('xkcd:salmon')
+            ax.set_facecolor('xkcd:grey')
+
         # Dead people
         if not dead.size == 0:
             ax.scatter(dead[:, 0], dead[:, 1], marker="x", c='C7', s=12)
@@ -24,11 +25,12 @@ class PlotFunctions:
         ax.scatter(df_e['x'], df_e['y'], c='C3', label='Exposed', s=6)
         ax.scatter(df_i['x'], df_i['y'], c='C1', label='Symptomatic', s=4)
         # Airports
-        airports = np.array(par.airport_location)
-        ax.scatter(airports[:, 0], airports[:, 1], marker="s", edgecolors='black', facecolors='none')
+        if par.n_airport > 0:
+            airports = np.array(par.airport_location)
+            ax.scatter(airports[:, 0], airports[:, 1], marker="s", edgecolors='black', facecolors='none')
         # Inside boundaries
-        ax.plot([par.cross_wall_coordinate, par.cross_wall_coordinate], [0, par.dimension], c='black', linewidth=2)
-        ax.plot([0, par.dimension], [par.cross_wall_coordinate, par.cross_wall_coordinate], c='black', linewidth=2)
+        ax.plot([par.boundary, par.boundary], [0, par.dimension], c='black', linewidth=2)
+        ax.plot([0, par.dimension], [par.boundary, par.boundary], c='black', linewidth=2)
         # Outside boundaries
         ax.plot([0, 0], [0, par.dimension], c='black', linewidth=4)
         ax.plot([par.dimension, par.dimension], [0, par.dimension], c='black', linewidth=4)
@@ -36,7 +38,7 @@ class PlotFunctions:
         ax.plot([0, par.dimension], [par.dimension, par.dimension], c='black', linewidth=4)
 
         ax.set(xlim=(0, par.dimension), ylim=(0, par.dimension))
-        plt.axis('off')
+        #plt.axis('off')
         plt.legend(bbox_to_anchor=(0., 0.98, 1., 0.102), loc="upper left", mode='expand',
                    ncol=4, borderaxespad=0., frameon=False)
         plt.savefig(path)

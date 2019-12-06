@@ -12,25 +12,29 @@ class Agent:
         self.health = health
         self.time_to_symptomatic = None
 
-    # Random move
-    def move_old(self):
-        done = False
+    def move(self):
+        direction = random.randint(1, 4)
+        x_area, y_area = self.get_area_code()
 
-        while not done:
-            direction = random.randint(1, 4)
+        if direction == 1:
+            self.x = np.mod(self.x - x_area * par.boundary - 1, par.boundary) + x_area * par.boundary
+        elif direction == 2:
+            self.y = np.mod(self.y - y_area * par.boundary - 1, par.boundary) + y_area * par.boundary
+        elif direction == 3:
+            self.x = np.mod(self.x - x_area * par.boundary + 1, par.boundary) + x_area * par.boundary
+        elif direction == 4:
+            self.y = np.mod(self.y - y_area * par.boundary + 1, par.boundary) + y_area * par.boundary
 
-            if direction == 1 and not self.x == 0: # and par.cross_wall_coordinate - self.x > 0 and par.cross_wall_coordinate - self.x < - 0.5:
-                self.x = self.x - 1
-                done = True
-            elif direction == 2 and not self.y == 0: # and par.cross_wall_coordinate - self.y > 0 and par.cross_wall_coordinate - self.y < - 0.5:
-                self.y = self.y - 1
-                done = True
-            elif direction == 3 and not self.x == par.dimension - 1: # and par.cross_wall_coordinate - self.x > 0.5 and par.cross_wall_coordinate - self.x < 0:
-                self.x = self.x + 1
-                done = True
-            elif direction == 4 and not self.y == par.dimension - 1: # and par.cross_wall_coordinate - self.y > 0.5 and par.cross_wall_coordinate - self.y < 0:
-                self.y = self.y + 1
-                done = True
+    def get_area_code(self):
+        if self.x < par.boundary:
+            x_area = 0
+        else:
+            x_area = 1
+        if self.y < par.boundary:
+            y_area = 0
+        else:
+            y_area = 1
+        return x_area, y_area
 
     # TODO
     # initialize discrete

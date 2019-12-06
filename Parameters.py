@@ -25,12 +25,12 @@ airport_flow = [[0, 0.33, 0.66, 1], [0.33, 0.33, 0.66, 1], [0.33, 0.66, 0.66, 1]
 n_airport = len(airport_location)
 
 # Area boundaries
-cross_wall_coordinate = dimension/2 + 0.5
+boundary = dimension/2
 
 limited_time = True
-T = 1000
+T = 2000
 
 # Plot parameters
-save_path = 'test4'
+save_path = 'test7'
 plot_step = 5          # How often to plot
 
