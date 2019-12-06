@@ -1,6 +1,6 @@
 import Parameters as par
 from Agent import Agent
-from PlotFunctions import PlotFunctions
+from PlotWindow import PlotWindow
 
 import random
 import time
@@ -17,7 +17,7 @@ class Simulation:
         self.time_step = 0
         self.population_size = 0
         self.count = {'s': 0, 'e': 0, 'i': 0, 'r': 0}
-        self.dead = []
+        self.plt_window = PlotWindow()
 
     def run_simulation(self):
         tic = time.time()
@@ -27,8 +27,8 @@ class Simulation:
 
         while True:
             if self.time_step % par.plot_step == 0:
-                path = os.path.join(par.save_path, 't{}'.format(self.time_step))
-                PlotFunctions.plot_population(self.population, np.array(self.dead), path, self.time_step, self.day)
+                self.plt_window.update_simulation_plot(self.population, self.time_step,
+                                                       self.day, self.count)
 
             if par.limited_time and self.time_step >= par.T:
                 print('Simulation ended because of time out.')
@@ -167,7 +167,7 @@ class Simulation:
     def kill_agent(self, agent):
         self.remove_agent(agent)
         self.population_size = self.population_size - 1
-        self.dead.append([agent.x, agent.y])
+        self.plt_window.add_dead([agent.x, agent.y])
 
     def get_most_dense_area(self):
         most_dense_position = None

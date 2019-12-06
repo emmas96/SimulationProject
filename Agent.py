@@ -42,8 +42,6 @@ class Agent:
     # in move
     # get dx and dy
     # update x and y
-    # implement periodic boundries based on with area you're in
-    #
 
     def get_position(self):
         return tuple([self.x, self.y])
