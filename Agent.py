@@ -25,6 +25,25 @@ class Agent:
         elif direction == 4:
             self.y = np.mod(self.y - y_area * par.boundary + 1, par.boundary) + y_area * par.boundary
 
+    def move_without_boundary(self):
+        done = False
+
+        while not done:
+            direction = random.randint(1, 4)
+
+            if direction == 1 and not self.x == 0:
+                self.x = self.x - 1
+                done = True
+            elif direction == 2 and not self.y == 0:
+                self.y = self.y - 1
+                done = True
+            elif direction == 3 and not self.x == par.dimension - 1:
+                self.x = self.x + 1
+                done = True
+            elif direction == 4 and not self.y == par.dimension - 1:
+                self.y = self.y + 1
+                done = True
+
     def get_area_code(self):
         if self.x < par.boundary:
             x_area = 0
@@ -35,13 +54,6 @@ class Agent:
         else:
             y_area = 1
         return x_area, y_area
-
-    # TODO
-    # initialize discrete
-    # put in dict based on discrete x and y
-    # in move
-    # get dx and dy
-    # update x and y
 
     def get_position(self):
         return tuple([self.x, self.y])
@@ -58,6 +70,8 @@ class Agent:
         if incubation_time < 1:
             incubation_time = 1
         self.time_to_symptomatic = time_step + incubation_time
+        if par.mean_incubation_time == 0:
+            self.time_to_symptomatic = time_step
 
     def becomes_symptomatic(self, time_step):
         if self.time_to_symptomatic <= time_step:

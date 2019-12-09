@@ -23,41 +23,55 @@ class Simulation:
         tic = time.time()
         self.initialize_population()
         self.start_plague()
-        print('Number of individuals initially exposed: {}'.format(self.count['e']))
+        with open(par.output_path, "a") as f:
+            f.write('Number of individuals initially exposed: {} \n'.format(self.count['e']))
+        #print('Number of individuals initially exposed: {}'.format(self.count['e']))
 
         while True:
             if self.time_step % par.plot_step == 0:
-                self.plt_window.update_simulation_plot(self.population, self.time_step,
-                                                       self.day, self.count)
+                self.plt_window.update_simulation_plot(self.population, self.time_step, self.day)
 
             if par.limited_time and self.time_step >= par.T:
-                print('Simulation ended because of time out.')
-                print('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.'.format(
-                    self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
+                toc = time.time()
+                with open(par.output_path, "a") as f:
+                    f.write('Simulation ended because of time out.\n')
+                    f.write('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.\n'.format(
+                            self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
+                    f.write('Computing time: {}\n'.format(toc - tic))
+                #print('Simulation ended because of time out.')
+                #print('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.'.format(
+                #    self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
                 break
 
             self.get_next_simulation_step()
+            self.plt_window.update_population_count(self.count)
 
             if self.count['e'] + self.count['i'] == 0:
-                print('Time: {}'.format(self.time_step))
-                print('Success: Virus defeated, {} people survived'.format(self.population_size))
-                print(self.population)
-                print(self.get_population_size())
                 toc = time.time()
-                print('Computing time: ' + str(toc - tic))
+                with open(par.output_path, "a") as f:
+                    f.write('Time: {}\n'.format(self.time_step))
+                    f.write('Success: Virus defeated, {} people survived\n'.format(self.population_size))
+                    f.write('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.\n'.format(
+                            self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
+                    f.write('Computing time: {}\n'.format(toc - tic))
+                #print('Time: {}'.format(self.time_step))
+                #print('Success: Virus defeated, {} people survived'.format(self.population_size))
+                #print('Computing time: ' + str(toc - tic))
                 break
             elif self.population_size == 0:
-                print('Time: {}'.format(self.time_step))
-                print('Fail: Entire population has died')
-                print(self.population)
-                print(self.get_population_size())
                 toc = time.time()
-                print('Computing time: ' + str(toc - tic))
+                with open(par.output_path, "a") as f:
+                    f.write('Time: {}\n'.format(self.time_step))
+                    f.write('Fail: Entire population has died\n')
+                    f.write('Computing time: {}\n'.format(toc - tic))
+                #print('Time: {}'.format(self.time_step))
+                #print('Fail: Entire population has died')
+                #print('Computing time: ' + str(toc - tic))
                 break
-            elif self.count['e'] + self.count['i'] >= self.population_size:
-                print('Bad sign: Entire population is infected')
-            if np.mod(self.time_step, 1000) == 0:
-                print('Time: {}'.format(self.time_step))
+            #elif self.count['e'] + self.count['i'] >= self.population_size:
+            #    print('Bad sign: Entire population is infected')
+            #if np.mod(self.time_step, 1000) == 0:
+            #    print('Time: {}'.format(self.time_step))
 
     def get_next_simulation_step(self):
         self.time_step = self.time_step + 1
@@ -142,6 +156,14 @@ class Simulation:
 
         self.population.update({position: local_population})
 
+    def infect_agent(self, agent):
+        position = agent.get_position()
+        local_population = self.population.get(position)
+        local_population['s'].pop(local_population['s'].index(agent))
+        local_population['e'].append(agent)
+        self.count['s'] = self.count['s'] - 1
+        self.count['e'] = self.count['e'] + 1
+
     # Recover a single agent
     def recover_agent(self, agent):
         position = agent.get_position()
@@ -203,7 +225,10 @@ class Simulation:
                     r = random.random()
                     if r < d:
                         self.remove_agent(agent)
-                        agent.move()
+                        if par.boundary == 0:
+                            agent.move_without_boundary()
+                        else:
+                            agent.move()
                         self.add_agent(agent)
 
     def disease_development(self):
@@ -212,12 +237,22 @@ class Simulation:
             local_population = self.population.get(position)
 
             if local_population['e'] or local_population['i']:
-                number_of_infected = len(local_population['e']) + len(local_population['i'])
-                propability_of_infection = (1 - par.beta) ** number_of_infected
-
-                r = random.random()
-                if r < propability_of_infection:
-                    self.infect_location(position)
+                if par.infect_all:
+                    number_of_infected = len(local_population['e']) + len(local_population['i'])
+                    probability_of_infection = (1 - par.beta) ** number_of_infected
+                    r = random.random()
+                    if r < probability_of_infection:
+                        self.infect_location(position)
+                else:
+                    number_of_exposed = len(local_population['e'])
+                    number_of_ill = len(local_population['i'])
+                    #probability_of_infection = 1 - (1 - par.beta_exposed) * number_of_exposed * (1 - par.beta_ill) * number_of_ill
+                    probability_of_infection = (1 - par.beta_exposed) ** number_of_exposed * (1 - par.beta_ill) ** number_of_ill
+                    for agent in local_population['s']:
+                        r = random.random()
+                        if r < probability_of_infection:
+                            agent.infect(self.time_step)
+                            self.infect_agent(agent)
 
                 infected = local_population['i'].copy()
                 for agent in infected:
@@ -227,7 +262,6 @@ class Simulation:
                         self.kill_agent(agent)
                     elif q < par.gamma:
                         self.recover_agent(agent)
-                # TODO should exposed be able to recover?
 
     @staticmethod
     def get_agents_from_location(local_population):
