@@ -31,20 +31,20 @@ class Simulation:
                 self.plt_window.update_simulation_plot(self.population, self.time_step, self.day)
 
             if par.limited_time and self.time_step >= par.T:
-                self.plt_window.final_proportion_plot(self.time_step)
+                s_count = self.plt_window.final_proportion_plot(self.time_step)
                 toc = time.time()
                 with open(par.output_path, "a") as f:
                     f.write('Simulation ended because of time out.\n')
                     f.write('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.\n'.format(
                             self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
                     f.write('Computing time: {}\n'.format(toc - tic))
-                return self.time_step, self.count['s']
+                return self.time_step, s_count
 
             self.get_next_simulation_step()
             self.plt_window.update_population_count(self.count)
 
             if self.count['e'] + self.count['i'] == 0:
-                self.plt_window.final_proportion_plot(self.time_step)
+                s_count = self.plt_window.final_proportion_plot(self.time_step)
                 toc = time.time()
                 with open(par.output_path, "a") as f:
                     f.write('Time: {}\n'.format(self.time_step))
@@ -52,15 +52,15 @@ class Simulation:
                     f.write('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.\n'.format(
                             self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
                     f.write('Computing time: {}\n'.format(toc - tic))
-                return self.time_step, self.count['s']
+                return self.time_step, s_count
             elif self.population_size == 0:
-                self.plt_window.final_proportion_plot(self.time_step)
+                s_count = self.plt_window.final_proportion_plot(self.time_step)
                 toc = time.time()
                 with open(par.output_path, "a") as f:
                     f.write('Time: {}\n'.format(self.time_step))
                     f.write('Fail: Entire population has died\n')
                     f.write('Computing time: {}\n'.format(toc - tic))
-                return self.time_step, self.count['s']
+                return self.time_step, s_count
             #elif self.count['e'] + self.count['i'] >= self.population_size:
             #    print('Bad sign: Entire population is infected')
             #if np.mod(self.time_step, 1000) == 0:
@@ -216,6 +216,8 @@ class Simulation:
                 local_population = self.population.get(position)
                 agents = Simulation.get_agents_from_location(local_population)
 
+                sym_ratio = len(local_population['i']) / len(local_population)
+
                 for agent in agents:
                     d = par.d
 
@@ -230,12 +232,17 @@ class Simulation:
 
                     r = random.random()
                     if r < d and agent.traveller_type == 1:
-                        self.remove_agent(agent)
-                        if par.boundary == 0:
-                            agent.move_without_boundary()
-                        else:
-                            agent.move()
-                        self.add_agent(agent)
+                        self.move_agent(agent)
+                    elif r < d and agent.traveller_type == 0 and sym_ratio > par.panic_threshold:
+                        self.move_agent(agent)
+
+    def move_agent(self, agent):
+        self.remove_agent(agent)
+        if par.boundary == 0:
+            agent.move_without_boundary()
+        else:
+            agent.move()
+        self.add_agent(agent)
 
     def disease_development(self):
         population_copy = self.population.copy()

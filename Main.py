@@ -4,6 +4,8 @@ import math
 import imageio
 import sys
 import os
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def get_dir():
@@ -17,6 +19,7 @@ def get_dir():
 
 def set_new_path(path):
     par.save_path = path
+    print(par.save_path)
     par.output_path = par.save_path + '_output.txt'
 
 
@@ -69,8 +72,38 @@ def set_par_baseline():
 def run_simulation():
     get_dir()
     sim = Simulation()
-    sim.run_simulation()
-    generate_gif()
-    #os.system("python3 GenerateVideo.py")
+    time, count = sim.run_simulation()
+    if par.plot_grid:
+        generate_gif()
+    return time, count
 
+
+def test_ratios():
+    n_iterations = 10
+    ratios = [0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1]
+    susceptible_count = []
+    for ratio in ratios:
+        count = 0
+        for i in range(n_iterations):
+            set_new_path('ratio_{}'.format(int(ratio * 100)))
+            par.traveller_ratio = ratio
+            sim = Simulation()
+            time, s0 = sim.run_simulation()
+            count = count + s0
+            if time < par.T:
+                print('Earlier stop')
+            print('Done with ratio = {}'.format(ratio))
+        susceptible_count.append(count/n_iterations)
+
+    plt.plot(ratios, susceptible_count)
+    plt.xlabel('Ratio of travellers')
+    plt.ylabel('Hours')
+    plt.title('Time until every individual has been exposed')
+    path = par.save_path + '_final_susceptible_0_vs_ratio'
+    plt.savefig(path)
+    plt.close()
+
+#test_ratios()
 run_simulation()
+
+

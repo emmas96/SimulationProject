@@ -10,9 +10,9 @@ class PlotWindow:
     def __init__(self):
         self.list_of_dead = []
         self.health_states_short = ['s', 'e', 'i', 'r']
-        self.health_states = ['Susc.', 'Exp.', 'Symp.', 'Rec.', 'Dead']
+        self.health_states = ['Susceptible', 'Exposed', 'Symptomatic', 'Recovered', 'Dead']
         self.coloring = ['C0', 'C3', 'C1', 'C2', 'C7']
-        self.population_count = {'Susc.': [], 'Exp.': [], 'Symp.': [], 'Rec.': [], 'Dead': []}
+        self.population_count = {'Susceptible': [], 'Exposed': [], 'Symptomatic': [], 'Recovered': [], 'Dead': []}
         self.plot_columns = int(np.sum(np.array([par.plot_grid, par.plot_proportions])))
         if self.plot_columns == 2:
             self.fig_size = (14, 4.8)
@@ -60,6 +60,8 @@ class PlotWindow:
         #t = np.array(range(0, len(self.population_count))) / 24
         #print(t)
         for i in range(len(self.health_states)):
+            if i == len(self.health_states) - 1 and not self.list_of_dead:
+                continue
             health = self.health_states[i]
             ax.plot(self.population_count[health], label=health, c=self.coloring[i])
         if final_time is not None:
@@ -68,8 +70,12 @@ class PlotWindow:
             ax.set(xlim=(0, par.T))
         ax.set_xlabel('Number of hours')
         ax.set_ylabel('Number of individuals')
+        if not self.list_of_dead:
+            ncol = 4
+        else:
+            ncol = 5
         ax.legend(bbox_to_anchor=(0., 0.98, 1., 0.102), loc="upper left", mode='expand',
-                  ncol=5, borderaxespad=0., frameon=False)
+                  ncol=ncol, borderaxespad=0., frameon=False)
 
     def final_proportion_plot(self, final_time):
         fig, axs = plt.subplots(1, 1)
@@ -77,6 +83,12 @@ class PlotWindow:
         path = par.save_path + '_finalProportion'
         plt.savefig(path)
         plt.close()
+
+        if 0 in self.population_count['Susceptible']:
+            return self.population_count['Susceptible'].index(0)
+        else:
+            return par.T
+
 
     @staticmethod
     def plot_population(ax, population):
