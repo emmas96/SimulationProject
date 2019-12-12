@@ -74,6 +74,3 @@ def run_simulation():
     #os.system("python3 GenerateVideo.py")
 
 run_simulation()
-
-
-

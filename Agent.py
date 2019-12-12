@@ -6,9 +6,11 @@ import numpy as np
 
 class Agent:
 
-    def __init__(self, x0, y0, health):
+    def __init__(self, x0, y0, health, traveller_type):
         self.x = x0
         self.y = y0
+        self.move_status = 0
+        self.traveller_type = traveller_type
         self.health = health
         self.time_to_symptomatic = None
 

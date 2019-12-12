@@ -56,14 +56,27 @@ class PlotWindow:
         ax.legend(bbox_to_anchor=(0., 1.02, 1., 0.102), loc="upper left", mode='expand',
                   ncol=4, borderaxespad=0., frameon=False)
 
-    def update_proportion_plot(self, ax):
+    def update_proportion_plot(self, ax, final_time=None):
+        #t = np.array(range(0, len(self.population_count))) / 24
+        #print(t)
         for i in range(len(self.health_states)):
             health = self.health_states[i]
             ax.plot(self.population_count[health], label=health, c=self.coloring[i])
-        if par.limited_time:
+        if final_time is not None:
+            ax.set(xlim=(0, final_time))
+        elif par.limited_time:
             ax.set(xlim=(0, par.T))
+        ax.set_xlabel('Number of hours')
+        ax.set_ylabel('Number of individuals')
         ax.legend(bbox_to_anchor=(0., 0.98, 1., 0.102), loc="upper left", mode='expand',
                   ncol=5, borderaxespad=0., frameon=False)
+
+    def final_proportion_plot(self, final_time):
+        fig, axs = plt.subplots(1, 1)
+        self.update_proportion_plot(axs, final_time)
+        path = par.save_path + '_finalProportion'
+        plt.savefig(path)
+        plt.close()
 
     @staticmethod
     def plot_population(ax, population):

@@ -25,28 +25,26 @@ class Simulation:
         self.start_plague()
         with open(par.output_path, "a") as f:
             f.write('Number of individuals initially exposed: {} \n'.format(self.count['e']))
-        #print('Number of individuals initially exposed: {}'.format(self.count['e']))
 
         while True:
             if self.time_step % par.plot_step == 0:
                 self.plt_window.update_simulation_plot(self.population, self.time_step, self.day)
 
             if par.limited_time and self.time_step >= par.T:
+                self.plt_window.final_proportion_plot(self.time_step)
                 toc = time.time()
                 with open(par.output_path, "a") as f:
                     f.write('Simulation ended because of time out.\n')
                     f.write('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.\n'.format(
                             self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
                     f.write('Computing time: {}\n'.format(toc - tic))
-                #print('Simulation ended because of time out.')
-                #print('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.'.format(
-                #    self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
-                break
+                return self.time_step, self.count['s']
 
             self.get_next_simulation_step()
             self.plt_window.update_population_count(self.count)
 
             if self.count['e'] + self.count['i'] == 0:
+                self.plt_window.final_proportion_plot(self.time_step)
                 toc = time.time()
                 with open(par.output_path, "a") as f:
                     f.write('Time: {}\n'.format(self.time_step))
@@ -54,20 +52,15 @@ class Simulation:
                     f.write('{} susceptible, {} exposed, {} symptomatic, {} recovered and {} people survived in total.\n'.format(
                             self.count['s'], self.count['e'], self.count['i'], self.count['r'], self.population_size))
                     f.write('Computing time: {}\n'.format(toc - tic))
-                #print('Time: {}'.format(self.time_step))
-                #print('Success: Virus defeated, {} people survived'.format(self.population_size))
-                #print('Computing time: ' + str(toc - tic))
-                break
+                return self.time_step, self.count['s']
             elif self.population_size == 0:
+                self.plt_window.final_proportion_plot(self.time_step)
                 toc = time.time()
                 with open(par.output_path, "a") as f:
                     f.write('Time: {}\n'.format(self.time_step))
                     f.write('Fail: Entire population has died\n')
                     f.write('Computing time: {}\n'.format(toc - tic))
-                #print('Time: {}'.format(self.time_step))
-                #print('Fail: Entire population has died')
-                #print('Computing time: ' + str(toc - tic))
-                break
+                return self.time_step, self.count['s']
             #elif self.count['e'] + self.count['i'] >= self.population_size:
             #    print('Bad sign: Entire population is infected')
             #if np.mod(self.time_step, 1000) == 0:
@@ -89,7 +82,20 @@ class Simulation:
             # Initialize at random position
             x = random.randint(0, par.dimension - 1)
             y = random.randint(0, par.dimension - 1)
-            agent = Agent(x, y, 's')
+
+            if par.not_start_at_airport:
+                while [x, y] in par.airport_location:
+                    x = random.randint(0, par.dimension - 1)
+                    y = random.randint(0, par.dimension - 1)
+
+            traveller_type = None
+            if par.travellers:
+                traveller_type = 0
+                r = random.random()
+                if r < par.traveller_ratio:
+                    traveller_type = 1
+
+            agent = Agent(x, y, 's', traveller_type)
             self.add_agent(agent)
 
         self.population_size = par.N
@@ -223,7 +229,7 @@ class Simulation:
                         d = par.d_symptomatic
 
                     r = random.random()
-                    if r < d:
+                    if r < d and agent.traveller_type == 1:
                         self.remove_agent(agent)
                         if par.boundary == 0:
                             agent.move_without_boundary()
@@ -247,7 +253,7 @@ class Simulation:
                     number_of_exposed = len(local_population['e'])
                     number_of_ill = len(local_population['i'])
                     #probability_of_infection = 1 - (1 - par.beta_exposed) * number_of_exposed * (1 - par.beta_ill) * number_of_ill
-                    probability_of_infection = (1 - par.beta_exposed) ** number_of_exposed * (1 - par.beta_ill) ** number_of_ill
+                    probability_of_infection = 1 - (1 - par.beta_exposed) ** number_of_exposed * (1 - par.beta_ill) ** number_of_ill
                     for agent in local_population['s']:
                         r = random.random()
                         if r < probability_of_infection:
