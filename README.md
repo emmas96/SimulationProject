@@ -1,5 +1,6 @@
 # Agent-based Modeling of Disease Spreading in a Scenario of Bio-Terrorism
 By: Emma Svensson, Ella Guiladi, Kevin Rylander, and Haodong Zheng
+
 December 18, 2019
 
 **Abstract**
